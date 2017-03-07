@@ -563,7 +563,9 @@ class CopyOperation(PatchOperation):
 
 def _compare_lists(path, src, dst):
     """Compares two lists objects and return JSON patch about."""
-    return _optimize(_compare(path, src, dst, *_split_by_common_seq(src, dst)))
+    # TODO: commented while optimization has bugs
+    # return _optimize(_compare(path, src, dst, *_split_by_common_seq(src, dst)))
+    return _compare(path, src, dst, *_split_by_common_seq(src, dst))
 
 
 def _longest_common_subseq(src, dst):

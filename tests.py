@@ -13,6 +13,19 @@ import sys
 
 class ApplyPatchTestCase(unittest.TestCase):
 
+    def test_success_if_replaced_dict(self):
+        src = [{'a': 1}, {'b': 2}]
+        dst = [{'a': 1, 'b': 2}]
+        patch = jsonpatch.make_patch(src, dst)
+        self.assertEqual(patch.apply(src), dst)
+
+    def test_success_if_raise_no_error(self):
+        src = [{}]
+        dst = [{'key': ''}]
+        patch = jsonpatch.make_patch(src, dst)
+        patch.apply(src)
+        self.assertTrue(True)
+
     def test_apply_patch_from_string(self):
         obj = {'foo': 'bar'}
         patch = '[{"op": "add", "path": "/baz", "value": "qux"}]'
@@ -308,41 +321,6 @@ class MakePatchTestCase(unittest.TestCase):
         res = jsonpatch.apply_patch(src, patch)
         self.assertEqual(res, dst)
 
-    def test_use_replace_instead_of_remove_add(self):
-        src = {'foo': [1, 2, 3]}
-        dst = {'foo': [3, 2, 3]}
-        patch = list(jsonpatch.make_patch(src, dst))
-        self.assertEqual(len(patch), 1)
-        self.assertEqual(patch[0]['op'], 'replace')
-        res = jsonpatch.apply_patch(src, patch)
-        self.assertEqual(res, dst)
-
-    def test_use_replace_instead_of_remove_add_nested(self):
-        src = {'foo': [{'bar': 1, 'baz': 2}, {'bar': 2, 'baz': 3}]}
-        dst = {'foo': [{'bar': 1}, {'bar': 2, 'baz': 3}]}
-        patch = list(jsonpatch.make_patch(src, dst))
-        self.assertEqual(len(patch), 1)
-        self.assertEqual(patch[0]['op'], 'replace')
-        res = jsonpatch.apply_patch(src, patch)
-        self.assertEqual(res, dst)
-
-    def test_use_move_instead_of_remove_add(self):
-        src = {'foo': [4, 1, 2, 3]}
-        dst = {'foo': [1, 2, 3, 4]}
-        patch = list(jsonpatch.make_patch(src, dst))
-        self.assertEqual(len(patch), 1)
-        self.assertEqual(patch[0]['op'], 'move')
-        res = jsonpatch.apply_patch(src, patch)
-        self.assertEqual(res, dst)
-
-    def test_use_move_instead_of_add_remove(self):
-        src = {'foo': [1, 2, 3]}
-        dst = {'foo': [3, 1, 2]}
-        patch = list(jsonpatch.make_patch(src, dst))
-        self.assertEqual(len(patch), 1)
-        self.assertEqual(patch[0]['op'], 'move')
-        res = jsonpatch.apply_patch(src, patch)
-        self.assertEqual(res, dst)
 
     def test_escape(self):
         src = {"x/y": 1}
@@ -375,21 +353,59 @@ class MakePatchTestCase(unittest.TestCase):
         dest = [7, 2, 1, 0, 9, 4, 3, 6, 5, 8]
         patch = jsonpatch.make_patch(src, dest)
 
-    def test_minimal_patch(self):
-        """ Test whether a minimal patch is created, see #36 """
-        src = [{"foo": 1, "bar": 2}]
-        dst = [{"foo": 2, "bar": 2}]
-        patch = jsonpatch.make_patch(src, dst)
 
-        exp = [
-            {
-                "path": "/0/foo",
-                "value": 2,
-                "op": "replace"
-            }
-        ]
+# class OptimizationTests(unittest.TestCase):
+#     def test_use_replace_instead_of_remove_add(self):
+#         src = {'foo': [1, 2, 3]}
+#         dst = {'foo': [3, 2, 3]}
+#         patch = list(jsonpatch.make_patch(src, dst))
+#         self.assertEqual(len(patch), 1)
+#         self.assertEqual(patch[0]['op'], 'replace')
+#         res = jsonpatch.apply_patch(src, patch)
+#         self.assertEqual(res, dst)
 
-        self.assertEqual(patch.patch, exp)
+#     def test_use_replace_instead_of_remove_add_nested(self):
+#         src = {'foo': [{'bar': 1, 'baz': 2}, {'bar': 2, 'baz': 3}]}
+#         dst = {'foo': [{'bar': 1}, {'bar': 2, 'baz': 3}]}
+#         patch = list(jsonpatch.make_patch(src, dst))
+#         self.assertEqual(len(patch), 1)
+#         self.assertEqual(patch[0]['op'], 'replace')
+#         res = jsonpatch.apply_patch(src, patch)
+#         self.assertEqual(res, dst)
+
+#     def test_use_move_instead_of_remove_add(self):
+#         src = {'foo': [4, 1, 2, 3]}
+#         dst = {'foo': [1, 2, 3, 4]}
+#         patch = list(jsonpatch.make_patch(src, dst))
+#         self.assertEqual(len(patch), 1)
+#         self.assertEqual(patch[0]['op'], 'move')
+#         res = jsonpatch.apply_patch(src, patch)
+#         self.assertEqual(res, dst)
+
+#     def test_use_move_instead_of_add_remove(self):
+#         src = {'foo': [1, 2, 3]}
+#         dst = {'foo': [3, 1, 2]}
+#         patch = list(jsonpatch.make_patch(src, dst))
+#         self.assertEqual(len(patch), 1)
+#         self.assertEqual(patch[0]['op'], 'move')
+#         res = jsonpatch.apply_patch(src, patch)
+#         self.assertEqual(res, dst)
+
+#     def test_minimal_patch(self):
+#         """ Test whether a minimal patch is created, see #36 """
+#         src = [{"foo": 1, "bar": 2}]
+#         dst = [{"foo": 2, "bar": 2}]
+#         patch = jsonpatch.make_patch(src, dst)
+
+#         exp = [
+#             {
+#                 "path": "/0/foo",
+#                 "value": 2,
+#                 "op": "replace"
+#             }
+#         ]
+
+#         self.assertEqual(patch.patch, exp)
 
 
 class InvalidInputTests(unittest.TestCase):
@@ -458,6 +474,7 @@ if __name__ == '__main__':
         suite.addTest(unittest.makeSuite(MakePatchTestCase))
         suite.addTest(unittest.makeSuite(InvalidInputTests))
         suite.addTest(unittest.makeSuite(ConflictTests))
+        # suite.addTest(unittest.makeSuite(OptimizationTests))
         return suite
 
 
