@@ -13,6 +13,21 @@ import sys
 
 class ApplyPatchTestCase(unittest.TestCase):
 
+    def test_js_file(self):
+        with open('./tests.js', 'r') as f:
+            tests = json.load(f)
+            for test in tests:
+                try:
+                    if 'expected' not in test:
+                        continue
+                    result = jsonpatch.apply_patch(test['doc'], test['patch'])
+                    self.assertEqual(result, test['expected'])
+                except Exception:
+                    if test.get('error'):
+                        continue
+                    else:
+                        raise
+
     def test_success_if_replaced_dict(self):
         src = [{'a': 1}, {'b': 2}]
         dst = [{'a': 1, 'b': 2}]
