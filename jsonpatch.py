@@ -563,9 +563,7 @@ class CopyOperation(PatchOperation):
 
 def _compare_lists(path, src, dst):
     """Compares two lists objects and return JSON patch about."""
-    # TODO: commented while optimization has bugs
-    # return _optimize(_compare(path, src, dst, *_split_by_common_seq(src, dst)))
-    return _compare(path, src, dst, *_split_by_common_seq(src, dst))
+    return _optimize(_compare(path, src, dst, *_split_by_common_seq(src, dst)))
 
 
 def _longest_common_subseq(src, dst):
@@ -770,9 +768,17 @@ def _optimize_using_replace(prev, cur):
     For nested strucures, tries to recurse replacement, see #36 """
     prev['op'] = 'replace'
     if cur['op'] == 'add':
-        # make recursive patch
+        # check case when dict "remove" is less than "add" and has a same key
         patch = make_patch(prev['value'], cur['value'])
-        if len(patch.patch) == 1 and patch.patch[0]['op'] != 'remove':
+        if isinstance(prev['value'], dict) and isinstance(cur['value'], dict) and len(prev['value'].keys()) == 1:
+            prev_set = set(prev['value'].keys())
+            cur_set = set(cur['value'].keys())
+            if prev_set & cur_set == prev_set:
+                patch = make_patch(cur['value'], prev['value'])
+
+        if len(patch.patch) == 1 and \
+                patch.patch[0]['op'] != 'remove' and \
+                patch.patch[0]['path'] and patch.patch[0]['path'].split('/')[1] in prev['value']:
             prev['path'] = prev['path'] + patch.patch[0]['path']
             prev['value'] = patch.patch[0]['value']
         else:

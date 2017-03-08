@@ -369,58 +369,85 @@ class MakePatchTestCase(unittest.TestCase):
         patch = jsonpatch.make_patch(src, dest)
 
 
-# class OptimizationTests(unittest.TestCase):
-#     def test_use_replace_instead_of_remove_add(self):
-#         src = {'foo': [1, 2, 3]}
-#         dst = {'foo': [3, 2, 3]}
-#         patch = list(jsonpatch.make_patch(src, dst))
-#         self.assertEqual(len(patch), 1)
-#         self.assertEqual(patch[0]['op'], 'replace')
-#         res = jsonpatch.apply_patch(src, patch)
-#         self.assertEqual(res, dst)
+class OptimizationTests(unittest.TestCase):
+    def test_use_replace_instead_of_remove_add(self):
+        src = {'foo': [1, 2, 3]}
+        dst = {'foo': [3, 2, 3]}
+        patch = list(jsonpatch.make_patch(src, dst))
+        self.assertEqual(len(patch), 1)
+        self.assertEqual(patch[0]['op'], 'replace')
+        res = jsonpatch.apply_patch(src, patch)
+        self.assertEqual(res, dst)
 
-#     def test_use_replace_instead_of_remove_add_nested(self):
-#         src = {'foo': [{'bar': 1, 'baz': 2}, {'bar': 2, 'baz': 3}]}
-#         dst = {'foo': [{'bar': 1}, {'bar': 2, 'baz': 3}]}
-#         patch = list(jsonpatch.make_patch(src, dst))
-#         self.assertEqual(len(patch), 1)
-#         self.assertEqual(patch[0]['op'], 'replace')
-#         res = jsonpatch.apply_patch(src, patch)
-#         self.assertEqual(res, dst)
+    def test_use_replace_instead_of_remove_add_nested(self):
+        src = {'foo': [{'bar': 1, 'baz': 2}, {'bar': 2, 'baz': 3}]}
+        dst = {'foo': [{'bar': 1}, {'bar': 2, 'baz': 3}]}
+        patch = list(jsonpatch.make_patch(src, dst))
+        self.assertEqual(len(patch), 1)
+        self.assertEqual(patch[0]['op'], 'replace')
+        res = jsonpatch.apply_patch(src, patch)
+        self.assertEqual(res, dst)
 
-#     def test_use_move_instead_of_remove_add(self):
-#         src = {'foo': [4, 1, 2, 3]}
-#         dst = {'foo': [1, 2, 3, 4]}
-#         patch = list(jsonpatch.make_patch(src, dst))
-#         self.assertEqual(len(patch), 1)
-#         self.assertEqual(patch[0]['op'], 'move')
-#         res = jsonpatch.apply_patch(src, patch)
-#         self.assertEqual(res, dst)
+    def test_use_move_instead_of_remove_add(self):
+        src = {'foo': [4, 1, 2, 3]}
+        dst = {'foo': [1, 2, 3, 4]}
+        patch = list(jsonpatch.make_patch(src, dst))
+        self.assertEqual(len(patch), 1)
+        self.assertEqual(patch[0]['op'], 'move')
+        res = jsonpatch.apply_patch(src, patch)
+        self.assertEqual(res, dst)
 
-#     def test_use_move_instead_of_add_remove(self):
-#         src = {'foo': [1, 2, 3]}
-#         dst = {'foo': [3, 1, 2]}
-#         patch = list(jsonpatch.make_patch(src, dst))
-#         self.assertEqual(len(patch), 1)
-#         self.assertEqual(patch[0]['op'], 'move')
-#         res = jsonpatch.apply_patch(src, patch)
-#         self.assertEqual(res, dst)
+    def test_use_move_instead_of_add_remove(self):
+        src = {'foo': [1, 2, 3]}
+        dst = {'foo': [3, 1, 2]}
+        patch = list(jsonpatch.make_patch(src, dst))
+        self.assertEqual(len(patch), 1)
+        self.assertEqual(patch[0]['op'], 'move')
+        res = jsonpatch.apply_patch(src, patch)
+        self.assertEqual(res, dst)
 
-#     def test_minimal_patch(self):
-#         """ Test whether a minimal patch is created, see #36 """
-#         src = [{"foo": 1, "bar": 2}]
-#         dst = [{"foo": 2, "bar": 2}]
-#         patch = jsonpatch.make_patch(src, dst)
+    def test_minimal_patch(self):
+        """ Test whether a minimal patch is created, see #36 """
+        src = [{'a': 1, 'foo': {'b': 2, 'd': 5}}]
+        dst = [{'a': 1, 'foo': {'b': 3, 'd': 6}}]
+        patch = jsonpatch.make_patch(src, dst)
+        self.assertEqual(patch.apply(src), dst)
 
-#         exp = [
-#             {
-#                 "path": "/0/foo",
-#                 "value": 2,
-#                 "op": "replace"
-#             }
-#         ]
+        src = [{'a': 1, 'b': 2, 'd': 5}]
+        dst = [{'a': 1, 'c': 3, 'd': 5}]
+        patch = jsonpatch.make_patch(src, dst)
+        self.assertEqual(patch.apply(src), dst)
 
-#         self.assertEqual(patch.patch, exp)
+        src = [{'a': 1, 'b': 2, 'd': 5}]
+        dst = [{'d': 6}]
+        patch = jsonpatch.make_patch(src, dst)
+        self.assertEqual(patch.apply(src), dst)
+
+        src = [{'a': 1}, {'b': 2}]
+        dst = [{'a': 1, 'b': 2}]
+        patch = jsonpatch.make_patch(src, dst)
+        self.assertEqual(patch.apply(src), dst)
+
+        src = [{"a": 1, "b": 2}]
+        dst = [{"b": 2, "c": 2}]
+        exp = [{u'path': u'/0', u'value': {u'c': 2, u'b': 2}, u'op': u'replace'}]
+        patch = jsonpatch.make_patch(src, dst)
+        self.assertEqual(patch.patch, exp)
+
+        src = [{"foo": 1, "bar": 2}]
+        dst = [{"foo": 2, "bar": 2}]
+
+        patch = jsonpatch.make_patch(src, dst)
+
+        exp = [
+            {
+                "path": "/0/foo",
+                "value": 2,
+                "op": "replace"
+            }
+        ]
+
+        self.assertEqual(patch.patch, exp)
 
 
 class InvalidInputTests(unittest.TestCase):
@@ -489,7 +516,7 @@ if __name__ == '__main__':
         suite.addTest(unittest.makeSuite(MakePatchTestCase))
         suite.addTest(unittest.makeSuite(InvalidInputTests))
         suite.addTest(unittest.makeSuite(ConflictTests))
-        # suite.addTest(unittest.makeSuite(OptimizationTests))
+        suite.addTest(unittest.makeSuite(OptimizationTests))
         return suite
 
 
